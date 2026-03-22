@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>escenario A-Frame</title>
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+</head>
+
+<body>
+  <a-scene>
+    
+    <a-assets>
+      <video id="miVideo"
+             src="alpes.mp4"
+             preload="auto"
+             loop
+             playsinline
+             crossorigin="anonymous">
+      </video>
+
+      <audio id="miAudio"
+             src="coldplay-viva_la_vida.mp3"
+             preload="auto"
+             crossorigin="anonymous">
+      </audio>
+    </a-assets>
+
+    <a-sky color="orange"></a-sky>
+
+    <a-plane position="0 0 -4"
+             rotation="-90 0 0"
+             width="10"
+             height="10"
+             color="white">
+    </a-plane>
+
+    <!-- VIDEO -->
+    <a-video id="videoPantalla"
+             src="#miVideo"
+             width="4"
+             height="2.25"
+             position="0 2 -5">
+    </a-video>
+
+    <!-- BOTÓN -->
+    <a-entity id="botonPlay"
+              geometry="primitive: plane; width: 1.5; height: 0.6"
+              material="color: purple"
+              position="0 0.5 -2"
+              text="value: CLICK AQUI; align: center; color: white; width: 4">
+    </a-entity>
+
+    <!-- ESFERA CON AUDIO 3D -->
+    <a-entity id="esferaAudio"
+              geometry="primitive: sphere; radius: 0.5"
+              material="color: pink"
+              position="3 1.5 -3">
+    </a-entity>
+
+    <!-- CÁMARA CON MOVIMIENTO -->
+    <a-entity id="rig" position="0 1.6 5">
+      <a-entity camera
+                look-controls
+                wasd-controls="acceleration: 20">
+        <a-cursor color="yellow"></a-cursor>
+      </a-entity>
+    </a-entity>
+
+  </a-scene>
+
+  <script>
+    const boton = document.querySelector('#botonPlay');
+    const video = document.querySelector('#miVideo');
+    const audio = document.querySelector('#miAudio');
+    const video3D = document.querySelector('#videoPantalla');
+    const esfera = document.querySelector('#esferaAudio');
+    const camera = document.querySelector('[camera]');
+
+    // --- CLICK EN BOTÓN PARA ACTIVAR AUDIO Y VIDEO ---
+    boton.addEventListener('click', () => {
+      video.play().catch(error => console.log("Error video:", error));
+      audio.loop = true;
+      audio.play().catch(error => console.log("Error audio:", error));
+
+      boton.setAttribute('material', 'color', '#00FF00');
+      boton.setAttribute('text', 'value', 'TODO ACTIVADO');
+    });
+
+    // --- HOVER EN VIDEO ---
+    video3D.addEventListener('mouseenter', () => video.play().catch(err => console.log(err)));
+    video3D.addEventListener('mouseleave', () => video.pause());
+
+    // --- AUDIO DE LA ESFERA CON VOLUMEN BASADO EN DISTANCIA ---
+    audio.loop = true;       // audio siempre activo
+    audio.volume = 0;        // empieza en silencio
+    audio.play().catch(err => console.log(err));
+
+    function actualizarVolumenEsfera() {
+      const camPos = camera.object3D.position;
+      const esferaPos = esfera.object3D.position;
+
+      const dx = camPos.x - esferaPos.x;
+      const dy = camPos.y - esferaPos.y;
+      const dz = camPos.z - esferaPos.z;
+      const distancia = Math.sqrt(dx*dx + dy*dy + dz*dz);
+
+      // Volumen máximo cuando estás muy cerca, mínimo a cierta distancia
+      const maxDist = 5; // distancia donde volumen = 0
+      let vol = 1 - (distancia / maxDist);
+      if (vol < 0) vol = 0;
+      if (vol > 1) vol = 1;
+
+      audio.volume = vol;
+    }
+
+    // Componente A-Frame para actualizar volumen cada frame
+    AFRAME.registerComponent('control-volumen', {
+      tick: function () {
+        actualizarVolumenEsfera();
+      }
+    });
+
+    // Agregamos el componente a la esfera
+    esfera.setAttribute('control-volumen', '');
+  </script>
+
+</body>
+</html>
